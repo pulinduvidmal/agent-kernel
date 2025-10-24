@@ -1,7 +1,8 @@
 import logging
 import traceback
 from http import HTTPStatus
-from typing import Optional
+
+from typing import Optional, Dict, Any  
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -16,7 +17,7 @@ class AgentRESTRequestHandler:
     - GET /health: Health check
     - GET /agents: List available agents
     - POST /run: Run an agent with a prompt
-      Payload JSON: { "prompt": str, "agent": str | null, "session_id": str | null }
+      Payload JSON: { "prompt": str, "agent": str | null, "session_id": str | null, "context": dict | null }  
     """
 
     _log = logging.getLogger("ak.api.agent")
@@ -25,13 +26,10 @@ class AgentRESTRequestHandler:
         prompt: str
         agent: Optional[str] = None
         session_id: Optional[str] = None
+        context: Optional[Dict[str, Any]] = None   # <-- NEW
 
     @classmethod
     def get_router(cls) -> APIRouter:
-        """
-        Returns the APIRouter instance.
-        """
-
         router = APIRouter()
 
         @router.get("/health")
@@ -52,7 +50,7 @@ class AgentRESTRequestHandler:
     async def run(cls, req: RunRequest):
         """
         Async method to run the agent.
-        :param req: Request an object containing the prompt and optional agent name.
+        :param req: Request object containing the prompt and optional agent name/context.
         """
         service = AgentService()
         try:
@@ -64,7 +62,9 @@ class AgentRESTRequestHandler:
                         "error": "No agent available",
                         "session_id": service.get_response_session_id(req.session_id)
                     })
-            result = await service.run(req.prompt)
+
+           
+            result = await service.run(req.prompt, context=req.context) # updated this
 
             if hasattr(result, 'raw'):
                 payload = {
