@@ -20,22 +20,17 @@ app.include_router(AgentRESTRequestHandler.get_router())
 def rag_search(q: str = Query(..., description="search query"), top_k: int = 5):
     return {"query": q, "results": rag.query(q)[:top_k]}
 
-# RAG + agent summarize endpoint 
 class AskBody(BaseModel):
     question: str
     agent: str | None = "general"
     top_k: int = 5
+    context: dict | None = None  
 
 @app.post("/rag/ask")
 def rag_ask(body: AskBody):
-    # search local data
     hits = rag.query(body.question)[: body.top_k]
-    # build context for the agent
-    if hits:
-        lines = [f"[{i+1}] {h['snippet']} (source: {h['source']})" for i, h in enumerate(hits)]
-        context_text = "\n".join(lines)
-    else:
-        context_text = "No local matches."
+    lines = [f"[{i+1}] {h['snippet']} (source: {h['source']})" for i, h in enumerate(hits)] or ["No local matches."]
+    context_text = "\n".join(lines)
 
     prompt = (
         "Use the local snippets below to answer the user's question in 3-5 sentences. "
@@ -45,15 +40,13 @@ def rag_ask(body: AskBody):
         f"SNIPPETS:\n{context_text}"
     )
 
-  
     resp = requests.post(
         "http://localhost:8000/run",
-        json={"agent": body.agent, "prompt": prompt},
+        json={"agent": body.agent, "prompt": prompt, "context": body.context}, 
         timeout=60,
     )
     resp.raise_for_status()
     out = resp.json()
-
     return {
         "question": body.question,
         "agent": body.agent,
@@ -61,6 +54,7 @@ def rag_ask(body: AskBody):
         "session_id": out.get("session_id"),
         "sources": hits,
     }
+
 
 if __name__ == "__main__":
 
