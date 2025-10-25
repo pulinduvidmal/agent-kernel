@@ -4,6 +4,8 @@ from typing import Optional, Dict, Any
 
 from ..core import Runtime, Agent, Session
 
+import json
+
 
 class AgentService:
     """
@@ -75,14 +77,16 @@ class AgentService:
             self._log.info(f"No module found with name '{name}': {e}")
             return None
 
-    async def run(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> str:
-       
+
+    
+    async def run(self, prompt: str, context: Optional[Dict[str, Any]] = None):
         if context is not None and self._session:
+            
             self._session.set("context", context)
+            # inject context into the prompt
+            # prompt = f"Use this context: {json.dumps(context, ensure_ascii=False)}\n\n{prompt}"
 
         result = await self._runtime.run(self._agent, self._session, prompt)
-
-       
         self._runtime.sessions().store(self._session)
         return result
 
