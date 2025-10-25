@@ -5,6 +5,8 @@ from agents.memory.session import SessionABC
 
 from ..core import Agent as BaseAgent, Module, Runner as BaseRunner, Session
 
+from agentkernel.core.prompting import build_preamble
+
 FRAMEWORK = "openai"
 
 
@@ -72,17 +74,27 @@ class OpenAIRunner(BaseRunner):
         if session is None:
             return None
         return session.get(FRAMEWORK) or session.set(FRAMEWORK, OpenAISession())
-
+    
     async def run(self, agent: Any, session: Session, prompt: Any) -> Any:
         """
         Runs the OpenAI agent with the provided prompt.
-        :param agent: The OpenAI agent to run.
-        :param session: The session to use for the agent.
-        :param prompt: The prompt to provide to the agent.
-        :return: The result of the agent's execution.
         """
-        result = await Runner.run(agent.agent, prompt, session=self._session(session))
+        openai_session = self._session(session)
+
+
+        preamble = build_preamble(
+            agent_instructions=getattr(agent.agent, "instructions", None),
+            session=session
+        )
+        
+        if preamble:
+            final_prompt = f"{preamble}\n\n{prompt}"
+        else:
+            final_prompt = prompt
+
+        result = await Runner.run(agent.agent, final_prompt, session=openai_session)
         return result.final_output
+
 
 
 class OpenAIAgent(BaseAgent):
