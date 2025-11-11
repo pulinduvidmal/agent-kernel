@@ -7,3 +7,4 @@ Scratches
 __pycache__
 /local_data
 /examples/cli/openai/local_data
+examples/cli/openai/demo_rest_api_rag.py
