@@ -84,6 +84,7 @@ class AgentService:
             
             self._session.set("context", context)
             # inject context into the prompt
+            
             # prompt = f"Use this context: {json.dumps(context, ensure_ascii=False)}\n\n{prompt}"
 
         result = await self._runtime.run(self._agent, self._session, prompt)
