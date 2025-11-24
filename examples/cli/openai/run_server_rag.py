@@ -9,7 +9,10 @@ import requests
 import local_agents   
 from agentkernel.api.agent import AgentRESTRequestHandler
 
-from rag_service import RAGService
+from rag_service import RAGService #import the RAGService class
+
+
+
 rag = RAGService(data_directory="local_data")
 
 app = FastAPI(title="AK + Local RAG")
